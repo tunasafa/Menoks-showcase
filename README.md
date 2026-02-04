@@ -1,21 +1,28 @@
-# Menoks
+<p align="center">
+  <img src="assets/menoks_logo.png" alt="Menoks" width="280" />
+</p>
 
-A ridesharing platform I built from scratch — web app, mobile app, and backend API. This repo showcases the architecture and tech decisions behind it.
+<p align="center">
+  <strong>ridesharing platform — web, mobile & API</strong><br/>
+  <a href="https://menoks.app">menoks.app</a>
+</p>
 
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)
-![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB?style=flat-square&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![GCP](https://img.shields.io/badge/GCP-Cloud_Run-4285F4?style=flat-square&logo=googlecloud&logoColor=white)
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/React_Native-0.81-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React Native" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/GCP-Cloud_Run-4285F4?style=flat-square&logo=googlecloud&logoColor=white" alt="GCP" />
+</p>
 
 ---
 
 ## What is Menoks?
 
-Menoks connects drivers offering rides with passengers looking for one. Think carpooling, but with a proper booking system, payments, ratings, and messaging built in.
+Menoks connects drivers offering rides with passengers looking for one. Carpooling with a proper booking system, payments, ratings, and messaging built in.
 
 **What I built:**
-- Web app (React + Vite + TypeScript)
+- Web app (React + Vite + TypeScript) → [menoks.app](https://menoks.app)
 - Mobile app for iOS/Android (React Native + Expo)
 - REST API backend (FastAPI + PostgreSQL)
 - Full CI/CD pipeline to GCP
@@ -24,35 +31,46 @@ Menoks connects drivers offering rides with passengers looking for one. Think ca
 
 ## Architecture Overview
 
-```mermaid
-flowchart TB
-    subgraph Clients
-        WEB["Web App<br/>React + Vite"]
-        MOBILE["Mobile App<br/>React Native"]
-    end
-
-    subgraph GCP
-        API["FastAPI Backend<br/>Cloud Run"]
-        DB["PostgreSQL<br/>Cloud SQL"]
-        STORAGE["Cloud Storage<br/>Media files"]
-    end
-
-    subgraph External
-        STRIPE["Stripe"]
-        RESEND["Resend"]
-        MAPS["Google Maps"]
-    end
-
-    WEB --> API
-    MOBILE --> API
-    API --> DB
-    API --> STORAGE
-    API --> STRIPE
-    API --> RESEND
-    API --> MAPS
 ```
-
-The frontend is hosted on Firebase (global CDN), backend runs as a containerized service on Cloud Run, and everything talks over HTTPS.
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                               CLIENTS                                       │
+│  ┌─────────────────────┐              ┌─────────────────────┐               │
+│  │     Web App         │              │    Mobile App       │               │
+│  │   React + Vite      │              │  React Native       │               │
+│  │   Firebase CDN      │              │  Expo SDK 54        │               │
+│  └──────────┬──────────┘              └──────────┬──────────┘               │
+└─────────────┼───────────────────────────────────┼───────────────────────────┘
+              │              HTTPS                 │
+              └───────────────┬────────────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         GOOGLE CLOUD PLATFORM                                │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                        Cloud Run (Backend)                          │    │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
+│  │  │  FastAPI Application                                          │   │    │
+│  │  │  • Uvicorn + uvloop (async event loop)                        │   │    │
+│  │  │  • Pydantic validation                                        │   │    │
+│  │  │  • JWT authentication                                         │   │    │
+│  │  └──────────────────────────────────────────────────────────────┘   │    │
+│  └──────────────────────────┬──────────────────────────────────────────┘    │
+│                             │                                                │
+│         ┌───────────────────┼───────────────────┐                           │
+│         ▼                   ▼                   ▼                           │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                    │
+│  │  Cloud SQL  │     │   Cloud     │     │   Secret    │                    │
+│  │ PostgreSQL  │     │   Storage   │     │   Manager   │                    │
+│  │   15        │     │   (media)   │     │  (secrets)  │                    │
+│  └─────────────┘     └─────────────┘     └─────────────┘                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+  │   Stripe    │      │   Resend    │      │ Google Maps │
+  │  Payments   │      │   Email     │      │  Geocoding  │
+  └─────────────┘      └─────────────┘      └─────────────┘
+```
 
 ---
 
@@ -106,18 +124,20 @@ This keeps business logic separate from data access. Makes testing easier and th
 
 ---
 
-## How Deployments Work
+## CI/CD Pipeline
 
 Push to `main` triggers the whole pipeline:
 
-```mermaid
-flowchart LR
-    PUSH["git push"] --> TEST["Run tests"]
-    TEST --> BUILD["Build container"]
-    BUILD --> REGISTRY["Push to Artifact Registry"]
-    REGISTRY --> MIGRATE["Run DB migrations"]
-    MIGRATE --> DEPLOY["Deploy to Cloud Run"]
-    DEPLOY --> TRAFFIC["Switch traffic"]
+```
+┌────────┐    ┌────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌─────────┐
+│  git   │───▶│  Run   │───▶│  Build   │───▶│  Push to │───▶│   Run    │───▶│ Deploy  │
+│  push  │    │ Tests  │    │Container │    │ Registry │    │Migrations│    │Cloud Run│
+└────────┘    └────────┘    └──────────┘    └──────────┘    └──────────┘    └─────────┘
+                 │                                                               │
+                 └─── Fail? Stop pipeline                                        │
+                                                                                 ▼
+                                                                          Traffic switch
+                                                                          to new revision
 ```
 
 The mobile app uses EAS Build — push a command, get a signed APK/IPA back. No local Android Studio or Xcode needed.
@@ -166,29 +186,41 @@ Schema changes are version-controlled. The CI/CD pipeline runs `gcloud run jobs 
 
 ## Payment System
 
-Payments use **Stripe** with a server-side payment intent flow. The key here is that the client never touches card details directly — everything goes through Stripe's SDK.
+Payments use **Stripe** with a server-side payment intent flow. The client never touches card details directly — everything goes through Stripe's SDK.
 
-```mermaid
-sequenceDiagram
-    participant App as Mobile/Web App
-    participant API as FastAPI Backend
-    participant Stripe as Stripe API
-    participant DB as PostgreSQL
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           PAYMENT FLOW                                           │
+└─────────────────────────────────────────────────────────────────────────────────┘
 
-    App->>API: POST /payments/create-intent (booking_id)
-    API->>DB: Get booking details, calculate amount
-    API->>Stripe: Create PaymentIntent ($amount)
-    Stripe-->>API: client_secret
-    API->>DB: Store payment_intent_id on booking
-    API-->>App: { client_secret }
-    
-    App->>Stripe: Confirm payment (card details)
-    Stripe-->>App: Payment successful
-    
-    App->>API: POST /bookings/:id/confirm
-    API->>Stripe: Retrieve PaymentIntent (verify status)
-    API->>DB: Update booking status to "confirmed"
-    API-->>App: Booking confirmed
+  Mobile/Web                    Backend                    Stripe
+      │                            │                         │
+      │  1. Book ride              │                         │
+      │──────────────────────────▶ │                         │
+      │                            │                         │
+      │                            │  2. Create PaymentIntent│
+      │                            │────────────────────────▶│
+      │                            │                         │
+      │                            │  3. client_secret       │
+      │                            │◀────────────────────────│
+      │                            │                         │
+      │  4. Return client_secret   │                         │
+      │◀───────────────────────────│                         │
+      │                            │                         │
+      │  5. Card details (native SDK)                        │
+      │─────────────────────────────────────────────────────▶│
+      │                            │                         │
+      │  6. Payment confirmed      │                         │
+      │◀─────────────────────────────────────────────────────│
+      │                            │                         │
+      │  7. Confirm booking        │                         │
+      │──────────────────────────▶ │                         │
+      │                            │  8. Verify payment      │
+      │                            │────────────────────────▶│
+      │                            │                         │
+      │  9. Booking confirmed      │                         │
+      │◀───────────────────────────│                         │
+      │                            │                         │
 ```
 
 **Why this flow:**
@@ -292,7 +324,6 @@ React Native lists use `FlatList` with virtualization — only visible items are
 
 ---
 
-
 ## What I Learned
 
 Building this taught me a lot:
@@ -304,6 +335,7 @@ Building this taught me a lot:
 
 ---
 
-## Contact
+## Links
 
-Open to collaboration and further development. Feel free to reach out.
+- **Website:** [menoks.app](https://menoks.app)
+- **Contact:** Open to collaboration and further development
