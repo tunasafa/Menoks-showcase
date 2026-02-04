@@ -48,45 +48,34 @@ Menoks connects drivers offering rides with passengers looking for one. Carpooli
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                               CLIENTS                                       │
-│  ┌─────────────────────┐              ┌─────────────────────┐               │
-│  │     Web App         │              │    Mobile App       │               │
-│  │   React + Vite      │              │  React Native       │               │
-│  │   Firebase CDN      │              │  Expo SDK 54        │               │
-│  └──────────┬──────────┘              └──────────┬──────────┘               │
-└─────────────┼───────────────────────────────────┼───────────────────────────┘
-              │              HTTPS                 │
-              └───────────────┬────────────────────┘
-                              ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         GOOGLE CLOUD PLATFORM                                │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │                        Cloud Run (Backend)                          │    │
-│  │  ┌──────────────────────────────────────────────────────────────┐   │    │
-│  │  │  FastAPI Application                                          │   │    │
-│  │  │  • Uvicorn + uvloop (async event loop)                        │   │    │
-│  │  │  • Pydantic validation                                        │   │    │
-│  │  │  • JWT authentication                                         │   │    │
-│  │  └──────────────────────────────────────────────────────────────┘   │    │
-│  └──────────────────────────┬──────────────────────────────────────────┘    │
-│                             │                                                │
-│         ┌───────────────────┼───────────────────┐                           │
-│         ▼                   ▼                   ▼                           │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                    │
-│  │  Cloud SQL  │     │   Cloud     │     │   Secret    │                    │
-│  │ PostgreSQL  │     │   Storage   │     │   Manager   │                    │
-│  │   15        │     │   (media)   │     │  (secrets)  │                    │
-│  └─────────────┘     └─────────────┘     └─────────────┘                    │
-└─────────────────────────────────────────────────────────────────────────────┘
-                              │
-         ┌────────────────────┼────────────────────┐
-         ▼                    ▼                    ▼
-  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-  │   Stripe    │      │   Resend    │      │ Google Maps │
-  │  Payments   │      │   Email     │      │  Geocoding  │
-  └─────────────┘      └─────────────┘      └─────────────┘
+```mermaid
+flowchart TB
+    subgraph Clients
+        WEB["Web App<br/>React + Vite"]
+        MOBILE["Mobile App<br/>React Native"]
+    end
+
+    subgraph GCP["Google Cloud Platform"]
+        API["FastAPI Backend<br/>Cloud Run"]
+        DB["PostgreSQL<br/>Cloud SQL"]
+        STORAGE["Cloud Storage<br/>Media files"]
+        SECRETS["Secret Manager"]
+    end
+
+    subgraph External["External Services"]
+        STRIPE["Stripe"]
+        RESEND["Resend"]
+        MAPS["Google Maps"]
+    end
+
+    WEB --> API
+    MOBILE --> API
+    API --> DB
+    API --> STORAGE
+    API --> SECRETS
+    API --> STRIPE
+    API --> RESEND
+    API --> MAPS
 ```
 
 ---
@@ -145,16 +134,14 @@ This keeps business logic separate from data access. Makes testing easier and th
 
 Push to `main` triggers the whole pipeline:
 
-```
-┌────────┐    ┌────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌─────────┐
-│  git   │───▶│  Run   │───▶│  Build   │───▶│  Push to │───▶│   Run    │───▶│ Deploy  │
-│  push  │    │ Tests  │    │Container │    │ Registry │    │Migrations│    │Cloud Run│
-└────────┘    └────────┘    └──────────┘    └──────────┘    └──────────┘    └─────────┘
-                 │                                                               │
-                 └─── Fail? Stop pipeline                                        │
-                                                                                 ▼
-                                                                          Traffic switch
-                                                                          to new revision
+```mermaid
+flowchart LR
+    PUSH["git push"] --> TEST["Run tests"]
+    TEST --> BUILD["Build container"]
+    BUILD --> REGISTRY["Push to Artifact Registry"]
+    REGISTRY --> MIGRATE["Run DB migrations"]
+    MIGRATE --> DEPLOY["Deploy to Cloud Run"]
+    DEPLOY --> TRAFFIC["Switch traffic"]
 ```
 
 The mobile app uses EAS Build — push a command, get a signed APK/IPA back. No local Android Studio or Xcode needed.
@@ -205,39 +192,27 @@ Schema changes are version-controlled. The CI/CD pipeline runs `gcloud run jobs 
 
 Payments use **Stripe** with a server-side payment intent flow. The client never touches card details directly — everything goes through Stripe's SDK.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           PAYMENT FLOW                                           │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant App as Mobile/Web App
+    participant API as FastAPI Backend
+    participant Stripe as Stripe API
+    participant DB as PostgreSQL
 
-  Mobile/Web                    Backend                    Stripe
-      │                            │                         │
-      │  1. Book ride              │                         │
-      │──────────────────────────▶ │                         │
-      │                            │                         │
-      │                            │  2. Create PaymentIntent│
-      │                            │────────────────────────▶│
-      │                            │                         │
-      │                            │  3. client_secret       │
-      │                            │◀────────────────────────│
-      │                            │                         │
-      │  4. Return client_secret   │                         │
-      │◀───────────────────────────│                         │
-      │                            │                         │
-      │  5. Card details (native SDK)                        │
-      │─────────────────────────────────────────────────────▶│
-      │                            │                         │
-      │  6. Payment confirmed      │                         │
-      │◀─────────────────────────────────────────────────────│
-      │                            │                         │
-      │  7. Confirm booking        │                         │
-      │──────────────────────────▶ │                         │
-      │                            │  8. Verify payment      │
-      │                            │────────────────────────▶│
-      │                            │                         │
-      │  9. Booking confirmed      │                         │
-      │◀───────────────────────────│                         │
-      │                            │                         │
+    App->>API: POST /payments/create-intent (booking_id)
+    API->>DB: Get booking details, calculate amount
+    API->>Stripe: Create PaymentIntent ($amount)
+    Stripe-->>API: client_secret
+    API->>DB: Store payment_intent_id on booking
+    API-->>App: { client_secret }
+    
+    App->>Stripe: Confirm payment (card details)
+    Stripe-->>App: Payment successful
+    
+    App->>API: POST /bookings/:id/confirm
+    API->>Stripe: Retrieve PaymentIntent (verify status)
+    API->>DB: Update booking status to "confirmed"
+    API-->>App: Booking confirmed
 ```
 
 **Why this flow:**
