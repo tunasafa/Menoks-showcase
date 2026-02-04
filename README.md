@@ -29,23 +29,6 @@ Menoks connects drivers offering rides with passengers looking for one. Carpooli
 
 ---
 
-## Screenshots
-
-### Mobile App
-
-<p float="left">
-  <img src="screenshots/mobile_dashboard.jpg" width="280" alt="Mobile Dashboard" />
-  <img src="screenshots/mobile_myrides.jpg" width="280" alt="Mobile My Rides" />
-</p>
-
-### Web App
-
-![Web Profile](screenshots/web_profile.png)
-
-![Web My Rides](screenshots/web_myrides.png)
-
----
-
 ## Architecture Overview
 
 ```mermaid
@@ -331,3 +314,41 @@ Building this taught me a lot:
 
 - **Website:** [menoks.app](https://menoks.app)
 - **Contact:** Open to collaboration and further development
+
+---
+
+## App Preview
+
+<table>
+  <tr>
+    <td align="center" colspan="2"><h3>📱 Mobile App</h3></td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/mobile_dashboard.jpg" width="300" alt="Dashboard" /><br/>
+      <sub><b>Dashboard</b><br/>Quick actions & upcoming rides</sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/mobile_myrides.jpg" width="300" alt="My Rides" /><br/>
+      <sub><b>My Rides</b><br/>Manage posted rides & bookings</sub>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" colspan="2"><h3>💻 Web App</h3></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="screenshots/web_profile.png" width="800" alt="Profile" /><br/>
+      <sub><b>Profile Page</b> — Manage personal info, vehicle details, and driver/passenger settings</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="screenshots/web_myrides.png" width="800" alt="My Rides" /><br/>
+      <sub><b>My Rides</b> — View posted rides, bookings, and manage applications</sub>
+    </td>
+  </tr>
+</table>
