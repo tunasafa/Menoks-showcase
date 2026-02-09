@@ -40,7 +40,7 @@ flowchart TB
 
     subgraph GCP["Google Cloud Platform"]
         API["FastAPI Backend<br/>Cloud Run"]
-        DB["PostgreSQL<br/>Cloud SQL"]
+        DB["PostgreSQL<br/>Neon"]
         STORAGE["Cloud Storage<br/>Media files"]
         SECRETS["Secret Manager"]
     end
@@ -71,7 +71,7 @@ flowchart TB
 |------|----------------|
 | **FastAPI** | Async by default, auto-generates OpenAPI docs, plays nice with Pydantic |
 | **SQLAlchemy 2.0** | Async support finally works well, and the new API is cleaner |
-| **PostgreSQL** | Rock solid, handles relationships properly, Cloud SQL makes it easy |
+| **PostgreSQL** | Rock solid, handles relationships properly, Neon serverless makes it easy |
 | **Alembic** | Keeps migrations in version control where they belong |
 | **Pydantic v2** | Validation that just works, plus the TypeScript-like schema definitions |
 
@@ -106,7 +106,7 @@ This keeps business logic separate from data access. Makes testing easier and th
 ### Infrastructure
 
 - **Cloud Run** — Containers that scale to zero when idle, no server management
-- **Cloud SQL** — Managed Postgres with automatic backups
+- **Neon** — Serverless Postgres with autoscaling, branching, and scale-to-zero
 - **Cloud Storage** — Profile photos and media with signed URLs
 - **Secret Manager** — No more `.env` files floating around
 - **Firebase Hosting** — CDN for the web app, handles SSL
@@ -133,7 +133,7 @@ The mobile app uses EAS Build — push a command, get a signed APK/IPA back. No 
 
 ## Database Architecture
 
-The database layer uses **PostgreSQL 15** on Cloud SQL with **SQLAlchemy 2.0** as the ORM and **asyncpg** as the async driver.
+The database layer uses **Neon Serverless PostgreSQL** with **SQLAlchemy 2.0** as the ORM and **asyncpg** as the async driver.
 
 **Why async matters:** Traditional ORMs block the thread while waiting for database responses. With asyncpg, the FastAPI event loop stays free to handle other requests during I/O waits. This means a single Cloud Run instance can handle significantly more concurrent requests.
 
@@ -148,7 +148,7 @@ engine = create_async_engine(
 )
 ```
 
-The `pool_pre_ping` is important for Cloud SQL — connections can go stale if the instance scales down, and this catches dead connections before they cause errors.
+The `pool_pre_ping` is important for Neon — connections can go stale if the compute scales to zero, and this catches dead connections before they cause errors.
 
 **Eager loading pattern:**
 One of the tricky parts with async SQLAlchemy is that lazy loading doesn't work. If you return a model with relationships from an endpoint, Pydantic tries to access those relationships during serialization, but the session is already closed.
@@ -230,7 +230,7 @@ Not just "we use HTTPS":
 **Infrastructure**
 - Secrets in GCP Secret Manager, not environment variables
 - Containers run as non-root user
-- Cloud SQL only accessible from Cloud Run (not public internet)
+- Database secured with SSL/TLS encryption
 
 **HTTP Headers** (via Firebase Hosting)
 ```
