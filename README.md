@@ -341,14 +341,24 @@ Building this taught me a lot:
   </tr>
   <tr>
     <td align="center" colspan="2">
-      <img src="screenshots/web_profile.png" width="800" alt="Profile" /><br/>
-      <sub><b>Profile Page</b> — Manage personal info, vehicle details, and driver/passenger settings</sub>
+      <img src="screenshots/web-dashboard.png" width="800" alt="Dashboard" /><br/>
+      <sub><b>Dashboard</b> — Quick actions, ongoing rides, and upcoming journey overview</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/web-searchride.png" width="400" alt="Search Rides" /><br/>
+      <sub><b>Search Rides</b> — Filter by origin, destination, date, and price</sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/web-postride.png" width="400" alt="Post a Ride" /><br/>
+      <sub><b>Post a Ride</b> — Set route, pricing, seats, and ride preferences</sub>
     </td>
   </tr>
   <tr>
     <td align="center" colspan="2">
-      <img src="screenshots/web_myrides.png" width="800" alt="My Rides" /><br/>
-      <sub><b>My Rides</b> — View posted rides, bookings, and manage applications</sub>
+      <img src="screenshots/web-ridecard.png" width="800" alt="My Rides" /><br/>
+      <sub><b>My Rides</b> — Manage posted rides, bookings, and passenger applications</sub>
     </td>
   </tr>
 </table>
